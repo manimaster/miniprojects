@@ -1,55 +1,69 @@
-// First, ensure you have Dlib installed. You can get it from http://dlib.net/
+// Before running this code:
 
-/*
-Problem Statement:
-Develop a sentiment analysis tool that can classify tweets or reviews into positive, negative, or neutral categories. 
-The solution should be based on a machine learning model trained on a labeled dataset of tweets/reviews.
+// You need to have the Dlib library and OpenCV installed. You can install them using package managers like apt-get or brew on Linux or macOS, or you can download and build them from source.
 
-Note: This is a basic example, and in a real-world scenario, you'd use a much larger dataset and possibly more advanced models.
-*/
+// Download the pre-trained shape predictor model file ("shape_predictor_68_face_landmarks.dat") from the Dlib website (http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2) and place it in the same directory as your C++ source code.
+
+// Replace "sample_face.jpg" with the path to your input image.
+
 
 #include <iostream>
-#include <dlib/svm.h>
+#include <dlib/opencv.h>
+#include <dlib/image_processing/frontal_face_detector.h>
+#include <dlib/image_processing.h>
+#include <dlib/image_io.h>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/objdetect/objdetect.hpp>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 using namespace dlib;
 
-typedef matrix<double, 3, 1> sample_type; // A 3-dimensional sample (e.g., a word's representation)
-typedef radial_basis_kernel<sample_type> kernel_type;
+// Function to analyze emotion from an image
+string analyzeEmotion(const string& imagePath) {
+    try {
+        // Load a pre-trained face detection model from dlib
+        frontal_face_detector faceDetector = get_frontal_face_detector();
+        shape_predictor landmarkDetector;
+        
+        // Deserialize the pre-trained shape predictor model
+        deserialize("shape_predictor_68_face_landmarks.dat") >> landmarkDetector;
+
+        // Load the input image using OpenCV
+        cv::Mat image = cv::imread(imagePath);
+        cv_image<bgr_pixel> dlibImage(image);
+
+        // Detect faces in the image
+        std::vector<rectangle> faces = faceDetector(dlibImage);
+
+        if (!faces.empty()) {
+            // Get facial landmarks using the shape predictor model
+            full_object_detection landmarks = landmarkDetector(dlibImage, faces[0]);
+
+            // Extract emotion features (e.g., using landmarks or other techniques)
+            
+            // Perform emotion classification (e.g., using a trained model)
+
+            // Return the detected emotion
+            return "Happy";  // Replace with actual emotion detection logic
+        } else {
+            return "No face detected";
+        }
+    } catch (std::exception& e) {
+        return "Error: " + string(e.what());
+    }
+}
 
 int main() {
-    // Sample dataset
-    // For simplicity, we're assuming a 3D representation of each text. 
-    // In a real-world scenario, you'd use a more sophisticated representation like word embeddings.
-    sample_type m;
-    std::vector<sample_type> samples;
-    std::vector<double> labels;
+    // Path to the input image
+    string inputImagePath = "sample_face.jpg";  // Replace with the path to your image
 
-    m = {1, 0, 0}; samples.push_back(m); labels.push_back(2);  // positive
-    m = {0, 0, 1}; samples.push_back(m); labels.push_back(0);  // negative
-    m = {0, 1, 0}; samples.push_back(m); labels.push_back(1);  // neutral
+    // Analyze the emotion in the input image
+    string emotion = analyzeEmotion(inputImagePath);
 
-    // Use SVM with radial basis kernel for training
-    decision_function<kernel_type> df = train_probabilistic_decision_function(
-        svm_c_trainer<kernel_type>(kernel_type(0.1), 10),
-        samples,
-        labels,
-        3
-    );
-
-    // Sample text representation for prediction (for the sake of demonstration)
-    sample_type sample_to_predict = {0.9, 0.1, 0};  // This should ideally be classified as positive
-
-    double label = df(sample_to_predict);
-
-    // Print prediction
-    if (label == 2) {
-        cout << "The sentiment of the sample text is: Positive" << endl;
-    } else if (label == 1) {
-        cout << "The sentiment of the sample text is: Neutral" << endl;
-    } else {
-        cout << "The sentiment of the sample text is: Negative" << endl;
-    }
+    cout << "Emotion in the image: " << emotion << endl;
 
     return 0;
 }
