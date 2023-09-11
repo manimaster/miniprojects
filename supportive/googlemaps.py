@@ -1,42 +1,38 @@
-# 2019 Version
-# Changes over time
+import requests
 
-import googlemaps
-from datetime import datetime
-
-# Replace 'YOUR_API_KEY' with your actual API key
-api_key = 'YOUR_API_KEY'
+# Replace 'YOUR_BING_MAPS_API_KEY' with your actual Bing Maps API key
+api_key = 'YOUR_BING_MAPS_API_KEY'
 
 def get_directions(api_key, origin, destination):
-    gmaps = googlemaps.Client(key=api_key)
+    base_url = 'https://dev.virtualearth.net/REST/v1/Routes/Driving'
 
-    # Geocoding the origin and destination to ensure proper place names
-    origin_geocode = gmaps.geocode(origin)
-    destination_geocode = gmaps.geocode(destination)
+    params = {
+        'key': api_key,
+        'wayPoint.1': origin,
+        'wayPoint.2': destination,
+        'optimize': 'time',  # You can change this to 'distance' if you want to optimize for distance
+        'format': 'json',
+    }
 
-    if not origin_geocode or not destination_geocode:
-        print("Invalid origin or destination. Please check the place names.")
+    response = requests.get(base_url, params=params)
+
+    if response.status_code != 200:
+        print("Error fetching directions.")
         return
 
-    # Extracting proper place names
-    origin = origin_geocode[0]['formatted_address']
-    destination = destination_geocode[0]['formatted_address']
+    data = response.json()
 
-    # Requesting directions
-    directions = gmaps.directions(origin, destination, mode="driving", departure_time=datetime.now())
+    if 'resourceSets' in data and len(data['resourceSets']) > 0 and 'resources' in data['resourceSets'][0]:
+        route = data['resourceSets'][0]['resources'][0]
 
-    if not directions:
+        distance = route['travelDistance']
+        duration = route['travelDuration']
+
+        print(f"Directions from {origin} to {destination}:")
+        print(f"Distance: {distance} km")
+        print(f"Estimated Duration: {duration} seconds")
+    else:
         print("No directions found between the specified locations.")
-        return
-
-    route = directions[0]['legs'][0]
-
-    distance = route['distance']['text']
-    duration = route['duration']['text']
-
-    print(f"Directions from {origin} to {destination}:")
-    print(f"Distance: {distance}")
-    print(f"Estimated Duration: {duration}")
 
 if __name__ == "__main__":
     origin = input("Enter the origin (e.g., 'New York, NY'): ")
